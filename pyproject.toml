@@ -1,0 +1,75 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+# Distribution name (pip install immunoHERD). The IMPORT name and the
+# console command are both `herd`.
+name = "immunoHERD"
+# Única fuente de la versión: herd/__init__.py (__version__).
+dynamic = ["version"]
+description = "HERD — host-aware prediction of protein immunogenicity"
+readme = "README.md"
+# >=3.11 porque los modelos necesitan keras>=3.13 (ver dependencies),
+# y Keras 3.13 dejó de publicar para Python 3.10 y anteriores.
+requires-python = ">=3.11"
+authors = [{ name = "Isidro Sobrino" }]
+license = "MIT"
+license-files = ["LICENSE"]
+keywords = [
+    "immunogenicity", "antigen", "vaccine", "protein", "ESM-2",
+    "protein-language-model", "veterinary", "bioinformatics", "deep-learning",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+# HERD needs torch (for ESM-2) and TensorFlow (for the .keras heads).
+#
+# keras>=3.13 is NOT optional: the bundled .keras files were written by
+# Keras 3.13.2 and their layer configs carry `quantization_config`, a field
+# Keras 3.12 does not know. TensorFlow only requires keras>=3.12, so without
+# this floor pip can resolve a Keras that installs fine but fails at load
+# time with "Unrecognized keyword arguments passed to Dense".
+dependencies = [
+    "fair-esm",
+    "torch",
+    # First TensorFlow release that requires Keras 3 (2.15 pins keras<2.16,
+    # i.e. Keras 2, which cannot load these models at all).
+    "tensorflow>=2.16",
+    # Floor: the bundled .keras files were written by Keras 3.13.2 and their
+    # layer configs carry `quantization_config`, unknown to Keras 3.12.
+    # Ceiling: the saved-model format has already broken twice across Keras
+    # minor versions, so a major bump is not assumed to be safe.
+    "keras>=3.13,<4",
+    "numpy",
+    "pandas",
+]
+
+# Console command: `herd predict ...` / `herd hosts`
+[project.scripts]
+herd = "herd.cli:main"
+
+[tool.setuptools.dynamic]
+version = { attr = "herd.__version__" }
+
+[tool.setuptools]
+# src-layout: el paquete no es importable desde la raíz del repositorio,
+# así que cualquier prueba usa por fuerza la versión instalada.
+package-dir = { "" = "src" }
+packages = ["herd"]
+include-package-data = true
+
+# The .keras weights are data, not code: without this declaration the wheel
+# is built without them and nothing fails until prediction time.
+[tool.setuptools.package-data]
+herd = ["models/*.keras", "models/individual/*.keras"]

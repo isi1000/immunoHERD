@@ -1,0 +1,19 @@
+# Normalise line endings. Without this, committing from Windows can store the
+# shell scripts with CRLF, and they then fail on Linux with a "bad interpreter"
+# or "\r: command not found" error.
+* text=auto
+
+*.sh   text eol=lf
+*.py   text eol=lf
+*.R    text eol=lf
+*.md   text eol=lf
+*.toml text eol=lf
+
+# Binary: never touch these.
+*.keras binary
+*.gz    binary
+*.png   binary
+*.svg   text eol=lf
+
+# Keep notebooks out of the diff view; they are JSON and diff badly.
+*.ipynb linguist-documentation
